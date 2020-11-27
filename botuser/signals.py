@@ -1,3 +1,4 @@
+import datetime
 from chatbot import settings
 from slack import WebClient
 from slack.errors import SlackApiError
@@ -37,3 +38,41 @@ def handle_Send_Message(sender, instance,created, **kwargs):
                 )
         except:
             pass
+
+@receiver(post_save, sender=Schedule_Message)
+def handle_Schedule_Message(sender, instance, **kwargs):
+    token = str(SlackOAuthRequest.objects.last())
+    user = instance.is_user
+    send_at = instance.post_at
+    year = send_at.year
+    month = send_at.month
+    date = send_at.day
+    hour = send_at.hour
+    minute = send_at.minute
+    epoch_time = datetime.datetime(
+        year, month, date, hour, minute).timestamp()
+    if user == True:
+        client = WebClient(token=token)
+    else:
+        client = WebClient(
+            token=settings.BOT_USER_ACCESS_TOKEN)
+    if token == settings.OAUTH_ACCESS_TOKEN:
+        response = client.chat_scheduleMessage(
+            channel=instance.channel,
+            text=instance.text,
+            post_at=epoch_time,
+            as_user=True,
+        )
+    elif user == True:
+        response = client.chat_scheduleMessage(
+            channel=instance.channel,
+            text=instance.text,
+            post_at=epoch_time,
+            as_user=False,
+        )
+    else:
+        response = client.chat_scheduleMessage(
+            channel=instance.channel,
+            text=instance.text,
+            post_at=epoch_time,
+        )

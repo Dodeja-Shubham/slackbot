@@ -70,53 +70,7 @@ class Schedule_Message_View(generics.GenericAPIView,
         '''
         Create Request
         '''
-        token = str(SlackOAuthRequest.objects.last())
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            send_at = serializer.validated_data.get('post_at')
-            year = send_at.year
-            month = send_at.month
-            date = send_at.day
-            hour = send_at.hour
-            minute = send_at.minute
-            epoch_time = datetime.datetime(
-                year, month, date, hour, minute).timestamp()
-            if serializer.validated_data.get('is_user') == True:
-                client = WebClient(token=token)
-            else:
-                client = WebClient(
-                    token=settings.BOT_USER_ACCESS_TOKEN)
-            try:
-                if token == settings.OAUTH_ACCESS_TOKEN:
-                    response = client.chat_scheduleMessage(
-                        channel=serializer.validated_data.get('channel'),
-                        text=serializer.validated_data.get('text'),
-                        post_at=epoch_time,
-                        as_user=True,
-                    )
-                elif serializer.validated_data.get('is_user') == True:
-                    response = client.chat_scheduleMessage(
-                        channel=serializer.validated_data.get('channel'),
-                        text=serializer.validated_data.get('text'),
-                        post_at=epoch_time,
-                        as_user=False,
-                    )
-                else:
-                    response = client.chat_scheduleMessage(
-                        channel=serializer.validated_data.get('channel'),
-                        text=serializer.validated_data.get('text'),
-                        post_at=epoch_time,
-                    )
-                assert response["message"]["text"] == serializer.validated_data.get(
-                    'text')
-                serializer.save()
-                return Response(f"Scheduled Message ID: {response['scheduled_message_id']}", status=status.HTTP_200_OK)
-            except SlackApiError as e:
-                assert e.response["ok"] is False
-                assert e.response["error"]
-                return Response(f"Got an error: {e.response['error']}", status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        return self.create(request)
 class List_Conversation_View(APIView):
     token = str(SlackOAuthRequest.objects.last())
     def get(self, request):
